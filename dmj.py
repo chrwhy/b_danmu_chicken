@@ -85,7 +85,7 @@ class DMJBot(object):
         while True:
             pre_data = self.socket_client.recv(16)
             print(len(pre_data))
-            if len(pre_data) == 0:
+            if len(pre_data) < 2:
                 print('==========================')
                 #sys.exit(-1)
                 continue
@@ -109,7 +109,7 @@ class DMJBot(object):
                     print('********************************')
                     print('********************************')
                     print('********************************')
-                    noCtrlStr = self.socket_client.recv(2500)                                 
+                    noCtrlStr = self.socket_client.recv(2500)                                           
                 else:
                     noCtrlStr = self.socket_client.recv(data_length-16)                                
                 if len(noCtrlStr) == 0:
@@ -137,6 +137,6 @@ if __name__ == '__main__':
     # 010101
     # room_id = 989474
     # 魔王127直播间
-    room_id = 39189
+    room_id = 1011
     dmj = DMJBot(room_id)
     dmj._start()
