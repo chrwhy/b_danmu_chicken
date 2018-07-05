@@ -38,8 +38,8 @@ class DMJBot(object):
         xml_string = ('<root>' + room_detail_xml_string.strip() + '</root>').encode('utf-8')
         root = xml.dom.minidom.parseString(xml_string).documentElement
         dm_server = root.getElementsByTagName('dm_server')
-        #self.dm_host = dm_server[0].firstChild.data
-        self.dm_host = '120.92.112.150'
+        self.dm_host = dm_server[0].firstChild.data
+        #self.dm_host = '120.92.112.150'
 
         # tcp_socket return
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -84,11 +84,12 @@ class DMJBot(object):
 
         left=0
         pre_msg=''
+        f = open('diffir.txt', 'a+')
         while True:
             if left>0:
                 print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀')
                 current_msg=self.socket_client.recv(left)
-                print('☘☘left: ' + str(left) +'\n')
+                print('☘☘left: ' + str(left))
                 #print('☘☘pre_msg: \n' + pre_msg+'\n')
                 #print(current_msg)#encoded bytes
                 #rint('☘☘current_msg: \n' + current_msg.decode('utf-8')+'\n')				
@@ -100,6 +101,7 @@ class DMJBot(object):
                     print('concate msg decode error')
                     print(pre_msg + current_msg)
                     print('**************************')
+                f.write(comp+'\n')
                 print('☘☘complete_msg: \n' + comp)				
                 print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀\n\n')
                 left=0
@@ -153,6 +155,7 @@ class DMJBot(object):
                 print(json)
                 print('\n\n')
                 json_data = simplejson.loads(json)                
+                f.write(json+'\n')
             except simplejson.JSONDecodeError:
                 print ('json error: ' + json + '\n\n')                
             except UnicodeDecodeError:
@@ -164,6 +167,6 @@ if __name__ == '__main__':
     # 010101
     # room_id = 989474
     # 魔王127直播间
-    room_id = 7734200
+    room_id = 5565763
     dmj = DMJBot(room_id)
     dmj._start()
