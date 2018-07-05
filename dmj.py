@@ -93,11 +93,18 @@ class DMJBot(object):
                 #print(current_msg)#encoded bytes
                 #rint('☘☘current_msg: \n' + current_msg.decode('utf-8')+'\n')				
                 #comp=pre_msg+current_msg[0:(len(current_msg))].decode('utf-8')                
-                comp=(pre_msg + current_msg).decode('utf-8')
+                try:
+                    comp=(pre_msg + current_msg).decode('utf-8')
+                except UnicodeDecodeError:
+                    print('**************************')
+                    print('concate msg decode error')
+                    print(pre_msg + current_msg)
+                    print('**************************')
                 print('☘☘complete_msg: \n' + comp)				
                 print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀\n\n')
                 left=0
                 continue
+
             pre_data = self.socket_client.recv(16)
             print('☘☘pre_data length: ' + str(len(pre_data)))
             if len(pre_data) < 16:
@@ -125,9 +132,9 @@ class DMJBot(object):
                 if len(noCtrlStr) == 0:
                     continue
                 actual_len=len(noCtrlStr)
-                if actual_len<10:
+                if actual_len<10 and claimed_len<=(actual_len+16):
                     print('actual length is too small ' + str(actual_len))
-                    continue    
+                    continue
                 
                 print('☘☘actual length: ' + str(actual_len))
                 if claimed_len>(actual_len+16):
