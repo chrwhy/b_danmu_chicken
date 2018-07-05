@@ -86,57 +86,64 @@ class DMJBot(object):
         pre_msg=''
         while True:
             if left>0:
-                print('*************concate case*************\n\n')
+                print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀')
                 current_msg=self.socket_client.recv(left)
-                print('left: ' + str(left) +'\n')
-                print('pre_msg: \n' + pre_msg+'\n')
-                print(current_msg)
-                print('current_msg: \n' + current_msg.decode('utf-8')+'\n')				
-                comp=pre_msg+current_msg[0:(len(current_msg))].decode('utf-8')
-                pre_msg=''				
-                print('complete_msg: \n' + comp)				
-                print('*************concate case*************\n\n')
+                print('☘☘left: ' + str(left) +'\n')
+                #print('☘☘pre_msg: \n' + pre_msg+'\n')
+                #print(current_msg)#encoded bytes
+                #rint('☘☘current_msg: \n' + current_msg.decode('utf-8')+'\n')				
+                #comp=pre_msg+current_msg[0:(len(current_msg))].decode('utf-8')                
+                comp=(pre_msg + current_msg).decode('utf-8')
+                print('☘☘complete_msg: \n' + comp)				
+                print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀\n\n')
                 left=0
                 continue
             pre_data = self.socket_client.recv(16)
-            print('pre_data length: ' + str(len(pre_data)))
+            print('☘☘pre_data length: ' + str(len(pre_data)))
             if len(pre_data) < 16:
                 print('pre_data length less than 2...')                
                 continue
 				
             try:
-                data_length, magic, ver, message_type, package_type = struct.unpack('!IHHII', pre_data)
-                if data_length < 1:
-                    sys.exit(1)
+                claimed_len, magic, ver, message_type, package_type = struct.unpack('!IHHII', pre_data)
+                if claimed_len < 1:
+                    print('***************************')
+                    print('***************************')
+                    print('***************************')
+                    print('***************************')
+                    continue
             except struct.error:
                 print ('pre_data: ' + pre_data.decode('utf-8'))
                 print ('pre_data_len: ' + str(len(pre_data)))
-            if(data_length == 16):
+            if(claimed_len == 16):
                 print ('Only control string received, skip it...')
-                print (data_length)
+                print (claimed_len)
                 continue
             try:
-                claimed_len=data_length
-#                if data_length>2500:                    
-#                    noCtrlStr = self.socket_client.recv(left)
-                    #claimed_len=left
-#                else:                    
-#                    noCtrlStr = self.socket_client.recv(data_length-16)
-                noCtrlStr = self.socket_client.recv(data_length-16)                                
+                print('☘☘claimed length: ' + str(claimed_len))
+                noCtrlStr = self.socket_client.recv(claimed_len-16)                                
                 if len(noCtrlStr) == 0:
                     continue
                 actual_len=len(noCtrlStr)
                 if actual_len<10:
                     print('actual length is too small ' + str(actual_len))
                     continue    
-                print('claimed length: ' + str(claimed_len))
-                print('actual length: ' + str(actual_len))
+                
+                print('☘☘actual length: ' + str(actual_len))
                 if claimed_len>(actual_len+16):
                     left=claimed_len-(actual_len+16)
-                    pre_msg=noCtrlStr.decode('utf-8')
-                    continue
+                    try:
+                        #pre_msg=noCtrlStr.decode('utf-8')
+                        pre_msg=noCtrlStr
+                        continue
+                    except UnicodeDecodeError:
+                        print('***************************')
+                        print(noCtrlStr)
+                        print('***************************\n\n')
+                        exit(-1)
                 json = noCtrlStr.decode('utf-8')
-                print('Json format: ' + json)
+                print('☘☘Json format☘☘')
+                print(json)
                 print('\n\n')
                 json_data = simplejson.loads(json)                
             except simplejson.JSONDecodeError:
@@ -150,6 +157,6 @@ if __name__ == '__main__':
     # 010101
     # room_id = 989474
     # 魔王127直播间
-    room_id = 5096
+    room_id = 7734200
     dmj = DMJBot(room_id)
     dmj._start()
