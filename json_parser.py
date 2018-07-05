@@ -16,3 +16,8 @@ print(danmu['cmd'])
 print(danmu['info'][1])
 print(danmu['info'][2][1])
 
+
+
+
+Json format: {"cmd":"WELCOME_GUARD","data":{"uid":37759832,"username":"FASR伊神","guard_level":3}}
+			 {"cmd":"WELCOME","data":{"uid":186348395,"uname":"云辰之空","is_admin":false,"svip":1}}
