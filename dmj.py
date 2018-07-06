@@ -6,18 +6,60 @@ import sys
 import _thread
 import threading
 import time
-import socket
 import requests
 import xml.dom.minidom
 import struct
 import simplejson
 from const import BCommand
-
-#sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='utf8') 
+import socket
 
 mutex = threading.Lock()
+DANMAKUs = []
 
+def syn_danmu_msg(msg):
+    mutex.acquire()
+    DANMAKUs.append(msg)
+    mutex.release()
 
+def _tcp_start():
+    print('Engine thread starting')
+    serverName = '127.0.0.1'
+    serverPort = 8080
+    clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    while True:
+        try:
+            clientSocket.connect((serverName,serverPort))    
+            break
+        except ConnectionRefusedError:
+            print('Engine side may not running, please check!!')
+            continue
+
+    while True:
+        mutex.acquire()
+        held_lock=True
+        if len(DANMAKUs)>0:
+            try:
+                clientSocket.send(DANMAKUs[0].encode())
+                del DANMAKUs[0]
+                modifiedSentence = clientSocket.recv(512)
+                print('From Server:', modifiedSentence.decode())
+            except ConnectionResetError:            
+                mutex.release()
+                held_lock=False
+                print('pipe broken, trying to re-connect')                
+                while True:
+                    try:
+                        clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                        clientSocket.connect((serverName,serverPort))    
+                        break
+                    except ConnectionRefusedError:
+                        print('pipe broken, trying to re-connect')
+                        time.sleep(1)
+                        continue
+        if held_lock:
+            mutex.release()
+        time.sleep(0.03)
+    clientSocket.close()
 
 def _heartbeat(self):
     while True:
@@ -90,6 +132,7 @@ class DMJBot(object):
         self.socket_client.recv(16)
         
         _thread.start_new_thread(_heartbeat, (self,))
+        _thread.start_new_thread(_tcp_start, ())               
 
         left=0
         last_package=''
@@ -111,6 +154,8 @@ class DMJBot(object):
                     print(last_package + current_package)
                     print('**************************')
                 #f.write(complete_msg+'\n')
+                syn_danmu_msg(complete_msg)
+                
                 print('☘☘complete_msglete_msg: \n' + complete_msg)				
                 print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀\n\n')
                 left=0
@@ -180,6 +225,7 @@ class DMJBot(object):
                 print('\n\n')
                 json_data = simplejson.loads(json)                
                 #f.write(json+'\n')
+                syn_danmu_msg(json)
             except simplejson.JSONDecodeError:
                 print ('json error: ' + json + '\n\n')                
             except UnicodeDecodeError:
@@ -192,5 +238,5 @@ if __name__ == '__main__':
     # room_id = 989474
     # 魔王127直播间
     room_id = 5279
-    dmj = DMJBot(room_id)
+    dmj = DMJBot(room_id)    
     dmj._start()
