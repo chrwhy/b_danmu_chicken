@@ -253,11 +253,13 @@ class DMJBot(object):
                 f.write('\n')
                 syn_danmu_msg(danmu_msg_json)
             except simplejson.JSONDecodeError:
-                print('json error: ' + danmu_msg_json + '\n\n')                
+                print('json error: ' + danmu_msg_json + '\n\n')
+                #continue
             except UnicodeDecodeError:
                 print('UnicodeDecodeError***************************')
                 print(danmu_msg_package)               
                 print('UnicodeDecodeError***************************\n\n')
+                #continue
 
 if __name__ == '__main__':
     #room_id = 71084
