@@ -17,6 +17,19 @@ mutex = threading.Lock()
 DANMAKUs = []
 TO_ENGINE=False
 
+
+def debug(msg):
+    print(msg)
+    
+def info(msg):
+    print(msg)
+
+def warn(msg):
+    print(msg)
+    
+def error(msg):
+    print(msg)
+
 def syn_danmu_msg(msg):
     if TO_ENGINE:
         mutex.acquire()
@@ -141,7 +154,7 @@ class DMJBot(object):
 
         left=0
         last_package=''
-        #f = open('test1.txt', 'a+', 1)
+        f = open('test1.txt', 'a+', 1, encoding='utf-8')
         while True:
             if left>0:
                 print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀')
@@ -158,7 +171,8 @@ class DMJBot(object):
                     print('concate msg decode error')
                     print(last_package + current_package)
                     print('**************************')
-                #f.write(complete_msg+'\n')
+                f.write(complete_msg)
+                f.write('\n')
                 syn_danmu_msg(complete_msg)
                 
                 print('☘☘complete_msglete_msg: \n' + complete_msg)				
@@ -235,7 +249,8 @@ class DMJBot(object):
                 #json_data = simplejson.loads(danmu_msg_json)
                 #check json format only
                 simplejson.loads(danmu_msg_json)
-                #f.write(json+'\n')
+                f.write(danmu_msg_json)
+                f.write('\n')
                 syn_danmu_msg(danmu_msg_json)
             except simplejson.JSONDecodeError:
                 print ('json error: ' + danmu_msg_json + '\n\n')                
@@ -248,6 +263,6 @@ if __name__ == '__main__':
     # 010101
     # room_id = 989474
     # 魔王127直播间
-    room_id = 5279
+    room_id = 7734200
     dmj = DMJBot(room_id)    
     dmj._start()
