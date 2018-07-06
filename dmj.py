@@ -1,7 +1,10 @@
 # coding: utf-8
 import random
 import os
+import io
+import sys
 import _thread
+import threading
 import time
 import socket
 import requests
@@ -9,6 +12,12 @@ import xml.dom.minidom
 import struct
 import simplejson
 from const import BCommand
+
+#sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='utf8') 
+
+mutex = threading.Lock()
+
+
 
 def _heartbeat(self):
     while True:
@@ -83,26 +92,26 @@ class DMJBot(object):
         _thread.start_new_thread(_heartbeat, (self,))
 
         left=0
-        pre_msg=''
-        f = open('diffir.txt', 'a+')
+        last_package=''
+        #f = open('test1.txt', 'a+', 1)
         while True:
             if left>0:
                 print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀')
-                current_msg=self.socket_client.recv(left)
+                current_package=self.socket_client.recv(left)
                 print('☘☘left: ' + str(left))
-                #print('☘☘pre_msg: \n' + pre_msg+'\n')
-                #print(current_msg)#encoded bytes
-                #rint('☘☘current_msg: \n' + current_msg.decode('utf-8')+'\n')				
-                #comp=pre_msg+current_msg[0:(len(current_msg))].decode('utf-8')                
+                #print('☘☘last_package: \n' + last_package+'\n')
+                #print(current_package)#encoded bytes
+                #rint('☘☘current_package: \n' + current_package.decode('utf-8')+'\n')				
+                #complete_msg=last_package+current_package[0:(len(current_package))].decode('utf-8')                
                 try:
-                    comp=(pre_msg + current_msg).decode('utf-8')
+                    complete_msg=(last_package + current_package).decode('utf-8')
                 except UnicodeDecodeError:
                     print('**************************')
                     print('concate msg decode error')
-                    print(pre_msg + current_msg)
+                    print(last_package + current_package)
                     print('**************************')
-                f.write(comp+'\n')
-                print('☘☘complete_msg: \n' + comp)				
+                #f.write(complete_msg+'\n')
+                print('☘☘complete_msglete_msg: \n' + complete_msg)				
                 print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀\n\n')
                 left=0
                 continue
@@ -130,36 +139,51 @@ class DMJBot(object):
                 continue
             try:
                 print('☘☘claimed length: ' + str(claimed_len))
-                noCtrlStr = self.socket_client.recv(claimed_len-16)                                
-                if len(noCtrlStr) == 0:
+                danmu_msg = self.socket_client.recv(claimed_len-16)                                
+                if len(danmu_msg) == 0:
                     continue
-                actual_len=len(noCtrlStr)
+                actual_len=len(danmu_msg)
                 if actual_len<10 and claimed_len<=(actual_len+16):
                     print('actual length is too small ' + str(actual_len))
                     continue
-                
+                if actual_len>2000 and left==0:
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('Unknown package, looks like last package was lost ????!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
+                    continue
                 print('☘☘actual length: ' + str(actual_len))
                 if claimed_len>(actual_len+16):
                     left=claimed_len-(actual_len+16)
                     try:
-                        #pre_msg=noCtrlStr.decode('utf-8')
-                        pre_msg=noCtrlStr
+                        #last_package=danmu_msg.decode('utf-8')
+                        last_package=danmu_msg
+                        print('☘☘' + str(left)+' bytes left, coming...')
                         continue
                     except UnicodeDecodeError:
                         print('***************************')
-                        print(noCtrlStr)
+                        print(danmu_msg)
                         print('***************************\n\n')
                         exit(-1)
-                json = noCtrlStr.decode('utf-8')
+                json = danmu_msg.decode('utf-8')
                 print('☘☘Json format☘☘')
                 print(json)
                 print('\n\n')
                 json_data = simplejson.loads(json)                
-                f.write(json+'\n')
+                #f.write(json+'\n')
             except simplejson.JSONDecodeError:
                 print ('json error: ' + json + '\n\n')                
             except UnicodeDecodeError:
-                print ('UNICODE error: ' + noCtrlStr)
+                print ('UNICODE error: ' + danmu_msg)
                 
 
 if __name__ == '__main__':
@@ -167,6 +191,6 @@ if __name__ == '__main__':
     # 010101
     # room_id = 989474
     # 魔王127直播间
-    room_id = 5565763
+    room_id = 5279
     dmj = DMJBot(room_id)
     dmj._start()
