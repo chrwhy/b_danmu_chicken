@@ -15,11 +15,13 @@ import socket
 
 mutex = threading.Lock()
 DANMAKUs = []
+TO_ENGINE=False
 
 def syn_danmu_msg(msg):
-    mutex.acquire()
-    DANMAKUs.append(msg)
-    mutex.release()
+    if TO_ENGINE:
+        mutex.acquire()
+        DANMAKUs.append(msg)
+        mutex.release()
 
 def _tcp_start():
     print('Engine thread starting')
@@ -118,6 +120,10 @@ class DMJBot(object):
             pass
 
     def _start(self):
+        _thread.start_new_thread(_heartbeat, (self,))
+        if TO_ENGINE:
+            _thread.start_new_thread(_tcp_start, ())
+        
         # 是JSON 前面要补16字节数据
         _dmj_data = simplejson.dumps({
             "roomid": self.room_id,
@@ -131,8 +137,7 @@ class DMJBot(object):
         # 这里先接收确认进入房间的信息
         self.socket_client.recv(16)
         
-        _thread.start_new_thread(_heartbeat, (self,))
-        _thread.start_new_thread(_tcp_start, ())               
+        
 
         left=0
         last_package=''
@@ -184,14 +189,10 @@ class DMJBot(object):
                 continue
             try:
                 print('☘☘claimed length: ' + str(claimed_len))
-                danmu_msg = self.socket_client.recv(claimed_len-16)                                
-                if len(danmu_msg) == 0:
+                if claimed_len<16:
+                    print('☘☘claimed length is too small')
                     continue
-                actual_len=len(danmu_msg)
-                if actual_len<10 and claimed_len<=(actual_len+16):
-                    print('actual length is too small ' + str(actual_len))
-                    continue
-                if actual_len>2000 and left==0:
+                if claimed_len>2000 and left==0:
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
@@ -206,28 +207,38 @@ class DMJBot(object):
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     continue
+
+                danmu_msg_package = self.socket_client.recv(claimed_len-16)                                
+                if len(danmu_msg_package) == 0:
+                    continue
+                actual_len=len(danmu_msg_package)
+                if actual_len<10 and claimed_len<=(actual_len+16):
+                    print('actual length is too small ' + str(actual_len))
+                    continue
+                
                 print('☘☘actual length: ' + str(actual_len))
                 if claimed_len>(actual_len+16):
                     left=claimed_len-(actual_len+16)
                     try:
-                        #last_package=danmu_msg.decode('utf-8')
-                        last_package=danmu_msg
+                        last_package=danmu_msg_package
                         print('☘☘' + str(left)+' bytes left, coming...')
                         continue
                     except UnicodeDecodeError:
-                        print('***************************')
-                        print(danmu_msg)
-                        print('***************************\n\n')
-                        exit(-1)
-                json = danmu_msg.decode('utf-8')
+                        print('UnicodeDecodeError***************************')
+                        print(danmu_msg_package)
+                        print('UnicodeDecodeError***************************\n\n')
+                        continue
+                danmu_msg_json = danmu_msg_package.decode('utf-8')
                 print('☘☘Json format☘☘')
-                print(json)
+                print(danmu_msg_json)
                 print('\n\n')
-                json_data = simplejson.loads(json)                
+                #json_data = simplejson.loads(danmu_msg_json)
+                #check json format only
+                simplejson.loads(danmu_msg_json)
                 #f.write(json+'\n')
-                syn_danmu_msg(json)
+                syn_danmu_msg(danmu_msg_json)
             except simplejson.JSONDecodeError:
-                print ('json error: ' + json + '\n\n')                
+                print ('json error: ' + danmu_msg_json + '\n\n')                
             except UnicodeDecodeError:
                 print ('UNICODE error: ' + danmu_msg)
                 
