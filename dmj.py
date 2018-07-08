@@ -12,12 +12,41 @@ import struct
 import simplejson
 from const import BCommand
 import socket
+import parser.danmu_parser
 
 mutex = threading.Lock()
 DANMAKUs = []
 TO_ENGINE=False
 
+def parse_danmu(danmuStr):
+    danmu = simplejson.loads(danmuStr)
+    cmd = danmu['cmd']
+    print(cmd)
+    print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    if cmd == 'DANMU_MSG':
+        user_name=danmu['info'][2][1]
+        msg=danmu['info'][1]
+        print(user_name  + '说: ' + msg)
+    elif cmd == 'SEND_GIFT':
+        gift_name=danmu['data']['giftName']
+        user_name=danmu['data']['uname']
+        num=danmu['data']['num']
+        print(user_name  + ' 赠送: ' + gift_name + 'x' + str(num))
+    elif cmd == 'WELCOME_GUARD': 
+	#{"cmd":"WELCOME_GUARD","data":{"uid":49861834,"username":"387懒癌末末","guard_level":3}}
+        #舰长进入直播间
+        print(danmuStr)
+    elif cmd == 'WELCOME':
+        #{"cmd":"WELCOME","data":{"uid":32435143,"uname":"Elucidator丶咲夜","is_admin":false,"svip":1}}
+        user_name=danmu['data']['uname']
+        print('欢迎 '+user_name)
+    print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n')
 
+
+#"cmd":"SYS_MSG","msg":"\u7cfb\u7edf\u516c\u544a\uff1a\u300a\u5d29\u574f3\u300b\u590f\u65e5\u76f4\u64ad\u6311\u6218\u6765\u5566\uff01","rep":1,"url":"https:\/\/www.bilibili.com\/blackboard\/activity-bh3summer.html"}
+
+#COMBO_END
+#ROOM_BLOCK_MSG  禁言
 def debug(msg):
     print(msg)
     
@@ -159,10 +188,10 @@ class DMJBot(object):
             if left>0:
                 print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀')
                 current_package=self.socket_client.recv(left)
-                print('☘☘left: ' + str(left))
-                #print('☘☘last_package: \n' + last_package+'\n')
+                print('☘ ☘ left: ' + str(left))
+                #print('☘ ☘ last_package: \n' + last_package+'\n')
                 #print(current_package)#encoded bytes
-                #rint('☘☘current_package: \n' + current_package.decode('utf-8')+'\n')				
+                #rint('☘ ☘ current_package: \n' + current_package.decode('utf-8')+'\n')				
                 #complete_msg=last_package+current_package[0:(len(current_package))].decode('utf-8')                
                 try:
                     complete_msg=(last_package + current_package).decode('utf-8')
@@ -175,13 +204,13 @@ class DMJBot(object):
                 f.write('\n')
                 syn_danmu_msg(complete_msg)
                 
-                print('☘☘complete_msglete_msg: \n' + complete_msg)				
+                print('☘ ☘ complete_msglete_msg: \n' + complete_msg)				
                 print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀\n\n')
                 left=0
                 continue
 
             pre_data = self.socket_client.recv(16)
-            print('☘☘pre_data length: ' + str(len(pre_data)))
+            print('☘ ☘ pre_data length: ' + str(len(pre_data)))
             if len(pre_data) < 16:
                 print('pre_data length less than 2...')                
                 continue
@@ -202,22 +231,14 @@ class DMJBot(object):
                 print (claimed_len)
                 continue
             try:
-                print('☘☘claimed length: ' + str(claimed_len))
+                print('☘ ☘ claimed length: ' + str(claimed_len))
                 if claimed_len<16:
-                    print('☘☘claimed length is too small')
+                    print('☘ ☘ claimed length is too small')
                     continue
                 if claimed_len>2000 and left==0:
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
-                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
-                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
-                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
-                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     print('Unknown package, looks like last package was lost ????!!!')
-                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
-                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
-                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
-                    print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     continue
@@ -230,12 +251,12 @@ class DMJBot(object):
                     print('actual length is too small ' + str(actual_len))
                     continue
                 
-                print('☘☘actual length: ' + str(actual_len))
+                print('☘ ☘ actual length: ' + str(actual_len))
                 if claimed_len>(actual_len+16):
                     left=claimed_len-(actual_len+16)
                     try:
                         last_package=danmu_msg_package
-                        print('☘☘' + str(left)+' bytes left, coming...')
+                        print('☘ ☘' + str(left)+' bytes left, coming...')
                         continue
                     except UnicodeDecodeError:
                         print('UnicodeDecodeError***************************')
@@ -243,7 +264,7 @@ class DMJBot(object):
                         print('UnicodeDecodeError***************************\n\n')
                         continue
                 danmu_msg_json = danmu_msg_package.decode('utf-8')
-                print('☘☘Json format☘☘')
+                print('☘ ☘ Json format☘ ☘')
                 print(danmu_msg_json)
                 print('\n\n')
                 #json_data = simplejson.loads(danmu_msg_json)
@@ -251,6 +272,7 @@ class DMJBot(object):
                 simplejson.loads(danmu_msg_json)
                 f.write(danmu_msg_json)
                 f.write('\n')
+                parse_danmu(danmu_msg_json)
                 syn_danmu_msg(danmu_msg_json)
             except simplejson.JSONDecodeError:
                 print('json error: ' + danmu_msg_json + '\n\n')
@@ -266,6 +288,7 @@ if __name__ == '__main__':
     # 010101
     # room_id = 989474
     # 魔王127直播间
-    room_id = 7734200
+    #room_id = 7734200
+    room_id = 280446
     dmj = DMJBot(room_id)    
     dmj._start()
