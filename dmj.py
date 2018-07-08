@@ -16,22 +16,26 @@ import parser.danmu_parser
 
 mutex = threading.Lock()
 DANMAKUs = []
-TO_ENGINE=False
+TO_ENGINE=True
+PRINT_JSON=False
 
 def parse_danmu(danmuStr):
     danmu = simplejson.loads(danmuStr)
     cmd = danmu['cmd']
     print(cmd)
-    print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
     if cmd == 'DANMU_MSG':
         user_name=danmu['info'][2][1]
         msg=danmu['info'][1]
-        print(user_name  + '说: ' + msg)
+        danmu_msg = user_name  + ': ' + msg
+        print(danmu_msg)
+        syn_danmu_msg('DANMAKU_'+danmu_msg)
     elif cmd == 'SEND_GIFT':
         gift_name=danmu['data']['giftName']
         user_name=danmu['data']['uname']
         num=danmu['data']['num']
-        print(user_name  + ' 赠送: ' + gift_name + 'x' + str(num))
+        danmu_msg=user_name  + ' 赠送: ' + gift_name + 'x' + str(num)
+        print(danmu_msg)
+        syn_danmu_msg('GIFT_'+danmu_msg)
     elif cmd == 'WELCOME_GUARD': 
 	#{"cmd":"WELCOME_GUARD","data":{"uid":49861834,"username":"387懒癌末末","guard_level":3}}
         #舰长进入直播间
@@ -47,8 +51,12 @@ def parse_danmu(danmuStr):
 
 #COMBO_END
 #ROOM_BLOCK_MSG  禁言
+
+DEBUG=False
+
 def debug(msg):
-    print(msg)
+    if DEBUG:
+        print(msg)
     
 def info(msg):
     print(msg)
@@ -65,17 +73,29 @@ def syn_danmu_msg(msg):
         DANMAKUs.append(msg)
         mutex.release()
 
+def print_json(json_data):
+    if PRINT_JSON:
+        print('☘ ☘ Json format☘ ☘')
+        print(json_data) 
+        print('\n')
+
 def _tcp_start():
     print('Engine thread starting')
-    serverName = '127.0.0.1'
-    serverPort = 8080
+    serverName = '172.18.95.25'
+    #serverName = '127.0.0.1'
+    serverPort = 18090
     clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    clientSocket.settimeout(5)
     while True:
         try:
+            clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            clientSocket.settimeout(5)
             clientSocket.connect((serverName,serverPort))    
             break
-        except ConnectionRefusedError:
+        #except (ConnectionRefusedError, TimeoutError):
+        except:
             print('Engine side may not running, please check!!')
+            time.sleep(2)
             continue
 
     while True:
@@ -83,22 +103,26 @@ def _tcp_start():
         held_lock=True
         if len(DANMAKUs)>0:
             try:
-                clientSocket.send(DANMAKUs[0].encode())
+                msg = {'component':'DANMAKU', 'message':DANMAKUs[0]}	
+                clientSocket.send(simplejson.dumps(msg).encode())
                 del DANMAKUs[0]
-                modifiedSentence = clientSocket.recv(512)
-                print('From Server:', modifiedSentence.decode())
-            except ConnectionResetError:            
+                ack = clientSocket.recv(512)
+                debug('From Server:' + ack.decode())
+            except (BrokenPipeError,ConnectionResetError):            
+            #except (ConnectionResetError):            
                 mutex.release()
                 held_lock=False
                 print('pipe broken, trying to re-connect')                
                 while True:
                     try:
                         clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                        clientSocket.settimeout(5)
                         clientSocket.connect((serverName,serverPort))    
                         break
-                    except ConnectionRefusedError:
-                        print('pipe broken, trying to re-connect')
-                        time.sleep(1)
+                    #except (ConnectionRefusedError,ConnectionResetError,ConnectTimeoutError):
+                    except:
+                        print('failed to connect, trying to re-connect')
+                        time.sleep(2)
                         continue
         if held_lock:
             mutex.release()
@@ -111,7 +135,7 @@ def _heartbeat(self):
         #xx = struct.pack('!IHHII', length, magic_num, version, msg_type, data_exchange_pack)
         heartbeat_pack = struct.pack('!IHHII', 16, 16, 1, 2, 1)        
         self.socket_client.send(heartbeat_pack + "".encode('utf-8'))
-        print('❤❤❤❤❤❤❤❤❤❤❤\n')
+        print('❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤\n')
         #\u2665
 
 class DMJBot(object):
@@ -186,12 +210,12 @@ class DMJBot(object):
         f = open('test1.txt', 'a+', 1, encoding='utf-8')
         while True:
             if left>0:
-                print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀')
+                debug('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀')
+                debug('☘ ☘ left: ' + str(left))
                 current_package=self.socket_client.recv(left)
-                print('☘ ☘ left: ' + str(left))
                 #print('☘ ☘ last_package: \n' + last_package+'\n')
                 #print(current_package)#encoded bytes
-                #rint('☘ ☘ current_package: \n' + current_package.decode('utf-8')+'\n')				
+                #print('☘ ☘ current_package: \n' + current_package.decode('utf-8')+'\n')				
                 #complete_msg=last_package+current_package[0:(len(current_package))].decode('utf-8')                
                 try:
                     complete_msg=(last_package + current_package).decode('utf-8')
@@ -202,17 +226,18 @@ class DMJBot(object):
                     print('**************************')
                 f.write(complete_msg)
                 f.write('\n')
-                syn_danmu_msg(complete_msg)
-                
-                print('☘ ☘ complete_msglete_msg: \n' + complete_msg)				
-                print('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀\n\n')
+
+                #syn_danmu_msg(complete_msg)
+                #print('☘ ☘ complete_msglete_msg: \n' + complete_msg)				
+                print_json(complete_msg)
+                debug('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀\n\n')
                 left=0
                 continue
 
             pre_data = self.socket_client.recv(16)
-            print('☘ ☘ pre_data length: ' + str(len(pre_data)))
+            #print('☘ ☘ pre_data length: ' + str(len(pre_data)))
             if len(pre_data) < 16:
-                print('pre_data length less than 2...')                
+                print('pre_data length:' + str(len(pre_data)) + ', which is less than 16...')                
                 continue
 				
             try:
@@ -231,9 +256,9 @@ class DMJBot(object):
                 print (claimed_len)
                 continue
             try:
-                print('☘ ☘ claimed length: ' + str(claimed_len))
+                debug('☘ ☘ claimed length: ' + str(claimed_len))
                 if claimed_len<16:
-                    print('☘ ☘ claimed length is too small')
+                    warn('☘ ☘ claimed length is too small')
                     continue
                 if claimed_len>2000 and left==0:
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
@@ -251,12 +276,12 @@ class DMJBot(object):
                     print('actual length is too small ' + str(actual_len))
                     continue
                 
-                print('☘ ☘ actual length: ' + str(actual_len))
+                debug('☘ ☘ actual length: ' + str(actual_len))
                 if claimed_len>(actual_len+16):
                     left=claimed_len-(actual_len+16)
                     try:
                         last_package=danmu_msg_package
-                        print('☘ ☘' + str(left)+' bytes left, coming...')
+                        debug('☘ ☘' + str(left)+' bytes left, coming...')
                         continue
                     except UnicodeDecodeError:
                         print('UnicodeDecodeError***************************')
@@ -264,16 +289,14 @@ class DMJBot(object):
                         print('UnicodeDecodeError***************************\n\n')
                         continue
                 danmu_msg_json = danmu_msg_package.decode('utf-8')
-                print('☘ ☘ Json format☘ ☘')
-                print(danmu_msg_json)
-                print('\n\n')
+                print_json(danmu_msg_json)
                 #json_data = simplejson.loads(danmu_msg_json)
                 #check json format only
                 simplejson.loads(danmu_msg_json)
                 f.write(danmu_msg_json)
                 f.write('\n')
                 parse_danmu(danmu_msg_json)
-                syn_danmu_msg(danmu_msg_json)
+                #syn_danmu_msg(danmu_msg_json)
             except simplejson.JSONDecodeError:
                 print('json error: ' + danmu_msg_json + '\n\n')
                 #continue
@@ -289,6 +312,6 @@ if __name__ == '__main__':
     # room_id = 989474
     # 魔王127直播间
     #room_id = 7734200
-    room_id = 280446
+    room_id = 5096
     dmj = DMJBot(room_id)    
     dmj._start()
