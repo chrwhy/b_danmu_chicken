@@ -12,46 +12,12 @@ import struct
 import simplejson
 from const import BCommand
 import socket
-import parser.danmu_parser
+import parser
 
 mutex = threading.Lock()
 DANMAKUs = []
-TO_ENGINE=True
+TO_ENGINE=False
 PRINT_JSON=False
-
-def parse_danmu(danmuStr):
-    danmu = simplejson.loads(danmuStr)
-    cmd = danmu['cmd']
-    print(cmd)
-    if cmd == 'DANMU_MSG':
-        user_name=danmu['info'][2][1]
-        msg=danmu['info'][1]
-        danmu_msg = user_name  + ': ' + msg
-        print(danmu_msg)
-        syn_danmu_msg('DANMAKU_'+danmu_msg)
-    elif cmd == 'SEND_GIFT':
-        gift_name=danmu['data']['giftName']
-        user_name=danmu['data']['uname']
-        num=danmu['data']['num']
-        danmu_msg=user_name  + ' 赠送: ' + gift_name + 'x' + str(num)
-        print(danmu_msg)
-        syn_danmu_msg('GIFT_'+danmu_msg)
-    elif cmd == 'WELCOME_GUARD': 
-	#{"cmd":"WELCOME_GUARD","data":{"uid":49861834,"username":"387懒癌末末","guard_level":3}}
-        #舰长进入直播间
-        print(danmuStr)
-    elif cmd == 'WELCOME':
-        #{"cmd":"WELCOME","data":{"uid":32435143,"uname":"Elucidator丶咲夜","is_admin":false,"svip":1}}
-        user_name=danmu['data']['uname']
-        print('欢迎 '+user_name)
-    print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n')
-
-
-#"cmd":"SYS_MSG","msg":"\u7cfb\u7edf\u516c\u544a\uff1a\u300a\u5d29\u574f3\u300b\u590f\u65e5\u76f4\u64ad\u6311\u6218\u6765\u5566\uff01","rep":1,"url":"https:\/\/www.bilibili.com\/blackboard\/activity-bh3summer.html"}
-
-#COMBO_END
-#ROOM_BLOCK_MSG  禁言
-
 DEBUG=False
 
 def debug(msg):
@@ -68,6 +34,8 @@ def error(msg):
     print(msg)
 
 def syn_danmu_msg(msg):
+    if msg=='':
+        return
     if TO_ENGINE:
         mutex.acquire()
         DANMAKUs.append(msg)
@@ -132,7 +100,7 @@ def _tcp_start():
 def _heartbeat(self):
     while True:
         time.sleep(30)
-        #xx = struct.pack('!IHHII', length, magic_num, version, msg_type, data_exchange_pack)
+        #heartbeat_pack = struct.pack('!IHHII', length, magic_num, version, msg_type, data_exchange_pack)
         heartbeat_pack = struct.pack('!IHHII', 16, 16, 1, 2, 1)        
         self.socket_client.send(heartbeat_pack + "".encode('utf-8'))
         print('❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤\n')
@@ -177,14 +145,6 @@ class DMJBot(object):
         _send_bytes = struct.pack('!IHHII', data_length, self.magic, self.ver, self.into_room, self.package_type)
         return _send_bytes + _data
 
-    def _parse_data(self, json_data):
-        if json_data['cmd'] == BCommand.DANMU_MSG:
-            pass
-        elif json_data['cmd'] == BCommand.SEND_GIFT:
-            pass
-        elif json_data['cmd'] == BCommand.WELCOME:
-            pass
-
     def _start(self):
         _thread.start_new_thread(_heartbeat, (self,))
         if TO_ENGINE:
@@ -198,12 +158,9 @@ class DMJBot(object):
         total_length = 16 + len(_dmj_data)
         data = self._pack_socket_data(total_length, _dmj_data)
         self.socket_client.send(data)
-
         # 会断是因为心跳问题，需要30秒内发送心跳
         # 这里先接收确认进入房间的信息
         self.socket_client.recv(16)
-        
-        
 
         left=0
         last_package=''
@@ -227,7 +184,7 @@ class DMJBot(object):
                 f.write(complete_msg)
                 f.write('\n')
 
-                #syn_danmu_msg(complete_msg)
+                syn_danmu_msg(parser.parse_danmu(complete_msg))
                 #print('☘ ☘ complete_msglete_msg: \n' + complete_msg)				
                 print_json(complete_msg)
                 debug('❀❀❀❀❀❀❀❀❀❀ concate case ❀❀❀❀❀❀❀❀❀❀\n\n')
@@ -236,17 +193,14 @@ class DMJBot(object):
 
             pre_data = self.socket_client.recv(16)
             #print('☘ ☘ pre_data length: ' + str(len(pre_data)))
-            if len(pre_data) < 16:
-                print('pre_data length:' + str(len(pre_data)) + ', which is less than 16...')                
+            if len(pre_data) != 16:
+                print('pre_data length:' + str(len(pre_data)) + ', which is supposed to be 16...')                
                 continue
 				
             try:
                 claimed_len, magic, ver, message_type, package_type = struct.unpack('!IHHII', pre_data)
                 if claimed_len < 1:
-                    print('***************************')
-                    print('***************************')
-                    print('***************************')
-                    print('***************************')
+                    warn('claimed length less than 1, please check!!')
                     continue
             except struct.error:
                 print ('pre_data: ' + pre_data.decode('utf-8'))
@@ -295,8 +249,8 @@ class DMJBot(object):
                 simplejson.loads(danmu_msg_json)
                 f.write(danmu_msg_json)
                 f.write('\n')
-                parse_danmu(danmu_msg_json)
-                #syn_danmu_msg(danmu_msg_json)
+                x = parser.parse_danmu(danmu_msg_json)
+                syn_danmu_msg(x)
             except simplejson.JSONDecodeError:
                 print('json error: ' + danmu_msg_json + '\n\n')
                 #continue
@@ -312,6 +266,6 @@ if __name__ == '__main__':
     # room_id = 989474
     # 魔王127直播间
     #room_id = 7734200
-    room_id = 5096
+    room_id = 21133
     dmj = DMJBot(room_id)    
     dmj._start()
