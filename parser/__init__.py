@@ -14,7 +14,7 @@ def parse_danmu(danmuStr):
         msg=danmu['info'][1]
         danmu_msg = user_name  + ': ' + msg
         print(danmu_msg)
-        print('================================n\n')
+        print('================================\n\n')
         return 'DANMAKU_'+danmu_msg
     elif cmd == 'SEND_GIFT':
         gift_name=danmu['data']['giftName']
@@ -22,19 +22,19 @@ def parse_danmu(danmuStr):
         num=danmu['data']['num']
         danmu_msg=user_name  + ' 赠送: ' + gift_name + 'x' + str(num)
         print(danmu_msg)
-        print('================================n\n')
+        print('================================\n\n')
         return 'GIFT_'+danmu_msg
     elif cmd == 'WELCOME_GUARD': 
 	#{"cmd":"WELCOME_GUARD","data":{"uid":49861834,"username":"387懒癌末末","guard_level":3}}
         #舰长进入直播间
         print(danmuStr)
-        print('================================n\n')
+        print('================================\n\n')
         return ''
     elif cmd == 'WELCOME':
         #{"cmd":"WELCOME","data":{"uid":32435143,"uname":"Elucidator丶咲夜","is_admin":false,"svip":1}}
         user_name=danmu['data']['uname']
         print('欢迎 '+user_name)
-        print('================================n\n')
+        print('================================\n\n')
         return ''
 
 
