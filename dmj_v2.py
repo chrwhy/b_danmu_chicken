@@ -144,6 +144,17 @@ class DMJBot(object):
         _send_bytes = struct.pack('!IHHII', data_length, self.magic, self.ver, self.into_room, self.package_type)
         return _send_bytes + _data
 
+    
+    def GetData(self, expect):
+        data=self.socket_client.recv(expect)
+        if (len(data)==expect):
+            return data
+        left=expect-len(data)
+        while left>0:
+            data+=self.socket_client.recv(left)
+            left=expect-(len(data))
+        return data  
+
     def _start(self):
         _thread.start_new_thread(_heartbeat, (self,))
         if TO_ENGINE:
@@ -163,16 +174,12 @@ class DMJBot(object):
 
         f = open('test1.txt', 'a+', 1, encoding='utf-8')
         while True:
-
-            pre_data = self.socket_client.recv(16)
+            pre_data = self.GetData(16) 
             #print('☘ ☘ pre_data length: ' + str(len(pre_data)))
             if len(pre_data) != 16:
                 print('pre_data length:' + str(len(pre_data)) + ', which is supposed to be 16...')                
                 print('pre_data length:' + str(len(pre_data)) + ', which is supposed to be 16...')                
                 print('pre_data length:' + str(len(pre_data)) + ', which is supposed to be 16...')                
-                print('pre_data length:' + str(len(pre_data)) + ', which is supposed to be 16...')                
-                print('pre_data length:' + str(len(pre_data)) + ', which is supposed to be 16...')                
-                pre_data += self.socket_client.recv(16-len(pre_data))
 
             try:
                 claimed_len, magic, ver, message_type, package_type = struct.unpack('!IHHII', pre_data)
@@ -186,9 +193,9 @@ class DMJBot(object):
                     online = struct.unpack('!l', danmu_msg_package)
                     print('人气值: '+ str(online) + '\n')
                     continue
-                if claimed_len < 1:
-                    warn('claimed length less than 1, please check!!')
-                    continue
+                #if claimed_len < 1:
+                #    warn('claimed length less than 1, please check!!')
+                #    continue
             except struct.error:
                 print ('pre_data: ' + pre_data.decode('utf-8'))
                 print ('pre_data_len: ' + str(len(pre_data)))
@@ -205,17 +212,8 @@ class DMJBot(object):
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     exit()
-
-                danmu_msg_package = self.socket_client.recv(claimed_len-16)                                
-                actual_len=len(danmu_msg_package)
-                if claimed_len>(actual_len+16):
-                    print('actual length is too small ' + str(actual_len))
-                    left=claimed_len-16-actual_len
-                    delta = self.socket_client.recv(left)                                
-                    danmu_msg_package += delta
-                    if((left-len(delta)) >0):
-                        delta=self.socket_client.recv(left-len(delta))                                                      
-                        danmu_msg_package += delta
+                
+                danmu_msg_package = self.GetData((claimed_len-16))
                 danmu_msg_json = danmu_msg_package.decode('utf-8')
                 print_json(danmu_msg_json)
                 json_data = simplejson.loads(danmu_msg_json)
@@ -238,6 +236,6 @@ if __name__ == '__main__':
     # room_id = 989474
     # 魔王127直播间
     #room_id = 7734200
-    room_id = 99783
+    room_id = 1011
     dmj = DMJBot(room_id)    
     dmj._start()
