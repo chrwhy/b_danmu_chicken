@@ -16,9 +16,12 @@ import parser
 
 mutex = threading.Lock()
 DANMAKUs = []
-TO_ENGINE=False
 PRINT_JSON=False
 DEBUG=False
+
+TO_ENGINE=True
+ENGINE_IP = '172.18.95.25'
+ENGINE_PORT = 18090
 
 def debug(msg):
     if DEBUG:
@@ -49,16 +52,13 @@ def print_json(json_data):
 
 def _tcp_start():
     print('Engine thread starting')
-    serverName = '172.18.95.25'
-    #serverName = '127.0.0.1'
-    serverPort = 18090
     clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     clientSocket.settimeout(5)
     while True:
         try:
             clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             clientSocket.settimeout(5)
-            clientSocket.connect((serverName,serverPort))    
+            clientSocket.connect((ENGINE_IP, ENGINE_PORT))
             break
         #except (ConnectionRefusedError, TimeoutError):
         except:
@@ -71,20 +71,18 @@ def _tcp_start():
         held_lock=True
         if len(DANMAKUs)>0:
             try:
-                msg = {'component':'DANMAKU', 'message':DANMAKUs[0]}	
-                clientSocket.send(simplejson.dumps(msg).encode())
+                clientSocket.send(DANMAKUs[0].encode())
                 del DANMAKUs[0]
-                ack = clientSocket.recv(512)
-                debug('From Server:' + ack.decode())
-            except (BrokenPipeError,ConnectionResetError):            
+                ack = clientSocket.recv(256)
+                print('From Server:' + ack.decode())
+            except (TimeoutError, BrokenPipeError, ConnectionResetError):            
                 mutex.release()
                 held_lock=False
                 print('pipe broken, trying to re-connect')                
                 while True:
                     try:
-                        clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                        clientSocket.connect((ENGINE_IP, ENGINE_PORT))
                         clientSocket.settimeout(5)
-                        clientSocket.connect((serverName,serverPort))    
                         break
                     #except (ConnectionRefusedError,ConnectionResetError,ConnectTimeoutError):
                     except:
@@ -236,6 +234,6 @@ if __name__ == '__main__':
     # room_id = 989474
     # 魔王127直播间
     #room_id = 7734200
-    room_id = 1011
+    room_id = 5279
     dmj = DMJBot(room_id)    
     dmj._start()

@@ -5,6 +5,10 @@ import simplejson
 #COMBO_END
 #ROOM_BLOCK_MSG  禁言
 
+def assembleJson(user, msg, cmd):
+    danmu = {'component':'DANMAKU', 'user': user, 'msg':msg, 'cmd':cmd}
+    return simplejson.dumps(danmu)
+
 def parse_danmu(danmuStr):
     danmu = simplejson.loads(danmuStr)
     cmd = danmu['cmd']
@@ -15,7 +19,7 @@ def parse_danmu(danmuStr):
         danmu_msg = user_name  + ': ' + msg
         print(danmu_msg)
         print('================================\n\n')
-        return 'DANMAKU_'+danmu_msg
+        return assembleJson(user_name, msg, cmd)
     elif cmd == 'SEND_GIFT':
         gift_name=danmu['data']['giftName']
         user_name=danmu['data']['uname']
@@ -23,7 +27,7 @@ def parse_danmu(danmuStr):
         danmu_msg=user_name  + ' 赠送: ' + gift_name + 'x' + str(num)
         print(danmu_msg)
         print('================================\n\n')
-        return 'GIFT_'+danmu_msg
+        return assembleJson(user_name, danmu_msg, cmd)
     elif cmd == 'WELCOME_GUARD': 
 	#{"cmd":"WELCOME_GUARD","data":{"uid":49861834,"username":"387懒癌末末","guard_level":3}}
         #舰长进入直播间
@@ -35,6 +39,8 @@ def parse_danmu(danmuStr):
         user_name=danmu['data']['uname']
         print('欢迎 '+user_name)
         print('================================\n\n')
+        return ''
+    else:
         return ''
 
 
