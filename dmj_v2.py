@@ -60,10 +60,10 @@ def _tcp_start():
             clientSocket.settimeout(5)
             clientSocket.connect((ENGINE_IP, ENGINE_PORT))
             break
-        #except (ConnectionRefusedError, TimeoutError):
-        except:
+        except (ConnectionRefusedError, TimeoutError):
+        #except:
             print('Engine side may not running, please check!!')
-            time.sleep(2)
+            time.sleep(5)
             continue
 
     while True:
@@ -84,10 +84,10 @@ def _tcp_start():
                         clientSocket.connect((ENGINE_IP, ENGINE_PORT))
                         clientSocket.settimeout(5)
                         break
-                    #except (ConnectionRefusedError,ConnectionResetError,ConnectTimeoutError):
-                    except:
+                    except (ConnectionRefusedError,ConnectionResetError,ConnectTimeoutError):
+                    #except:
                         print('failed to connect, trying to re-connect')
-                        time.sleep(2)
+                        time.sleep(5)
                         continue
         if held_lock:
             mutex.release()
