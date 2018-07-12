@@ -15,13 +15,15 @@ import socket
 import parser
 
 mutex = threading.Lock()
+
 DANMAKUs = []
 PRINT_JSON=False
 DEBUG=False
 
 TO_ENGINE=True
-ENGINE_IP = '172.18.95.25'
-ENGINE_PORT = 18090
+ENGINE_IP='172.18.95.25'
+ENGINE_PORT=18090
+STARTED=False
 
 def debug(msg):
     if DEBUG:
@@ -36,9 +38,11 @@ def warn(msg):
 def error(msg):
     print(msg)
 
+
 def syn_danmu_msg(msg):
     if msg=='':
         return
+    
     if TO_ENGINE:
         mutex.acquire()
         DANMAKUs.append(msg)
@@ -75,16 +79,17 @@ def _tcp_start():
                 del DANMAKUs[0]
                 ack = clientSocket.recv(256)
                 print('From Server:' + ack.decode())
-            except (TimeoutError, BrokenPipeError, ConnectionResetError):            
+            except (TimeoutError, BrokenPipeError, ConnectionResetError, socket.timeout):            
                 mutex.release()
                 held_lock=False
                 print('pipe broken, trying to re-connect')                
                 while True:
                     try:
-                        clientSocket.connect((ENGINE_IP, ENGINE_PORT))
+                        clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                         clientSocket.settimeout(5)
+                        clientSocket.connect((ENGINE_IP, ENGINE_PORT))
                         break
-                    except (ConnectionRefusedError,ConnectionResetError,ConnectTimeoutError):
+                    except (ConnectionRefusedError,ConnectionResetError,TimeoutError):
                     #except:
                         print('failed to connect, trying to re-connect')
                         time.sleep(5)
@@ -191,9 +196,6 @@ class DMJBot(object):
                     online = struct.unpack('!l', danmu_msg_package)
                     print('人气值: '+ str(online) + '\n')
                     continue
-                #if claimed_len < 1:
-                #    warn('claimed length less than 1, please check!!')
-                #    continue
             except struct.error:
                 print ('pre_data: ' + pre_data.decode('utf-8'))
                 print ('pre_data_len: ' + str(len(pre_data)))
@@ -209,8 +211,8 @@ class DMJBot(object):
                     print('Unknown package, looks like last package was lost ????!!!')
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
                     print('!!!!!!!!!!!!!!!!!!!!!!!!')
-                    exit()
-                
+                    continue
+ 
                 danmu_msg_package = self.GetData((claimed_len-16))
                 danmu_msg_json = danmu_msg_package.decode('utf-8')
                 print_json(danmu_msg_json)
@@ -234,6 +236,8 @@ if __name__ == '__main__':
     # room_id = 989474
     # 魔王127直播间
     #room_id = 7734200
-    room_id = 5279
+    #Diffir Live 
+    #room_id=5565763
+    room_id=26057
     dmj = DMJBot(room_id)    
     dmj._start()
