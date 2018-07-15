@@ -21,8 +21,10 @@ PRINT_JSON=False
 DEBUG=False
 
 TO_ENGINE=True
-ENGINE_IP='172.18.95.25'
-ENGINE_PORT=18090
+ENGINE_IP='192.168.31.238'
+#ENGINE_IP='172.18.95.25'
+#ENGINE_IP='192.168.1.4'
+ENGINE_PORT=8080
 STARTED=False
 
 def debug(msg):
@@ -54,21 +56,32 @@ def print_json(json_data):
         print(json_data) 
         print('\n')
 
-def _tcp_start():
-    print('Engine thread starting')
+
+def _getSocketClient():
     clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    clientSocket.settimeout(5)
     while True:
         try:
             clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            clientSocket.settimeout(5)
+            #clientSocket.settimeout(5)
             clientSocket.connect((ENGINE_IP, ENGINE_PORT))
+            print('connected')
             break
-        except (ConnectionRefusedError, TimeoutError):
-        #except:
+        except ConnectionRefusedError as a:
+            clientSocket=None
+            print(a)
+            print('Engine side may not running, please check!!')
+            time.sleep(5)
+        except TimeoutError as b:
+            clientSocket=None
+            print(b)
             print('Engine side may not running, please check!!')
             time.sleep(5)
             continue
+    return clientSocket 
+
+def _tcp_start():
+    print('Engine thread starting')
+    clientSocket = _getSocketClient() 
 
     while True:
         mutex.acquire()
@@ -82,21 +95,16 @@ def _tcp_start():
             except (TimeoutError, BrokenPipeError, ConnectionResetError, socket.timeout):            
                 mutex.release()
                 held_lock=False
+                clientSocket.close() 
                 print('pipe broken, trying to re-connect')                
-                while True:
-                    try:
-                        clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-                        clientSocket.settimeout(5)
-                        clientSocket.connect((ENGINE_IP, ENGINE_PORT))
-                        break
-                    except (ConnectionRefusedError,ConnectionResetError,TimeoutError):
-                    #except:
-                        print('failed to connect, trying to re-connect')
-                        time.sleep(5)
-                        continue
+                clientSocket = _getSocketClient() 
+            except:
+               print("Unexpected error:", sys.exc_info()[0])
+        else:
+           print('Empty DANMAKUs\n') 
         if held_lock:
             mutex.release()
-        time.sleep(0.03)
+        time.sleep(3)
     clientSocket.close()
 
 def _heartbeat(self):
@@ -237,7 +245,7 @@ if __name__ == '__main__':
     # 魔王127直播间
     #room_id = 7734200
     #Diffir Live 
-    #room_id=5565763
-    room_id=26057
+    room_id=5565763
+    #room_id=5096
     dmj = DMJBot(room_id)    
     dmj._start()
