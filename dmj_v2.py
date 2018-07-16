@@ -12,7 +12,7 @@ import struct
 import simplejson
 from const import BCommand
 import socket
-import parser
+import danmuparser
 
 mutex = threading.Lock()
 
@@ -227,7 +227,7 @@ class DMJBot(object):
                 json_data = simplejson.loads(danmu_msg_json)
                 f.write(danmu_msg_json)
                 f.write('\n')
-                danmu_brief = parser.parse_danmu(danmu_msg_json)
+                danmu_brief = danmuparser.parse_danmu(danmu_msg_json)
                 syn_danmu_msg(danmu_brief)
             except simplejson.JSONDecodeError:
                 print('json error: ' + danmu_msg_json + '\n\n')
@@ -245,7 +245,7 @@ if __name__ == '__main__':
     # 魔王127直播间
     #room_id = 7734200
     #Diffir Live 
-    room_id=5565763
+    room_id=280446
     #room_id=5096
     dmj = DMJBot(room_id)    
     dmj._start()
