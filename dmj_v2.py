@@ -21,11 +21,11 @@ PRINT_JSON=False
 DEBUG=False
 
 TO_ENGINE=True
-ENGINE_IP='192.168.31.238'
+#ENGINE_IP='192.168.31.238'
+#ENGINE_IP='172.18.94.22'
 #ENGINE_IP='172.18.95.25'
-#ENGINE_IP='192.168.1.4'
-ENGINE_PORT=8080
-STARTED=False
+ENGINE_IP='192.168.1.4'
+ENGINE_PORT=18090
 
 def debug(msg):
     if DEBUG:
@@ -104,7 +104,7 @@ def _tcp_start():
            print('Empty DANMAKUs\n') 
         if held_lock:
             mutex.release()
-        time.sleep(3)
+        time.sleep(0.04)
     clientSocket.close()
 
 def _heartbeat(self):
@@ -135,8 +135,8 @@ class DMJBot(object):
         xml_string = ('<root>' + room_detail_xml_string.strip() + '</root>').encode('utf-8')
         root = xml.dom.minidom.parseString(xml_string).documentElement
         dm_server = root.getElementsByTagName('dm_server')
-        #self.dm_host = dm_server[0].firstChild.data
-        self.dm_host = '120.92.112.150'
+        self.dm_host = dm_server[0].firstChild.data
+        #self.dm_host = '120.92.112.150'
 
         # tcp_socket return
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -199,17 +199,23 @@ class DMJBot(object):
                 if (package_type !=0):
                     print('package_type: ' + str(package_type))
                 if (claimed_len == 20):
-                    print('Heartbeat from Bilibili')
+                    print('Bilibili ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤')
                     danmu_msg_package = self.socket_client.recv(claimed_len-16)                                
                     online = struct.unpack('!l', danmu_msg_package)
-                    print('人气值: '+ str(online) + '\n')
+                    monitor = {'component':'MONITOR', 'online':online[0]}
+                    syn_danmu_msg(simplejson.dumps(monitor))
+                    print('人气值: '+ str(online[0]) + '\n')
                     continue
             except struct.error:
                 print ('pre_data: ' + pre_data.decode('utf-8'))
                 print ('pre_data_len: ' + str(len(pre_data)))
+                continue
+            except:
+                print("Unexpected error:", sys.exc_info()[0])
+                continue
             
             try:
-                print('☘ ☘ claimed length: ' + str(claimed_len))
+                #print('☘ ☘ claimed length: ' + str(claimed_len))
                 if claimed_len<16:
                     warn('☘ ☘ claimed length is too small')
                     continue
@@ -237,15 +243,13 @@ class DMJBot(object):
                 print(danmu_msg_package)               
                 print('UnicodeDecodeError***************************\n\n')
                 #continue
+            except:
+               print("Unexpected error:", sys.exc_info()[0])
 
 if __name__ == '__main__':
-    #room_id = 71084
-    # 010101
-    # room_id = 989474
-    # 魔王127直播间
-    #room_id = 7734200
+    print(sys.argv)
     #Diffir Live 
-    room_id=280446
-    #room_id=5096
+    #room_id=5565763
+    room_id=5086
     dmj = DMJBot(room_id)    
     dmj._start()

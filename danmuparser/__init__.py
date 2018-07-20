@@ -36,16 +36,19 @@ def parse_danmu(danmuStr):
     elif cmd == 'WELCOME_GUARD': 
 	#{"cmd":"WELCOME_GUARD","data":{"uid":49861834,"username":"387懒癌末末","guard_level":3}}
         #舰长进入直播间
-        print(danmuStr)
+        user_name=danmu['data']['uname']
+        print('欢迎舰长: '+user_name)
         print('================================\n\n')
-        return ''
+        return assembleJson(user_name, "", cmd)
     elif cmd == 'WELCOME':
         #{"cmd":"WELCOME","data":{"uid":32435143,"uname":"Elucidator丶咲夜","is_admin":false,"svip":1}}
         user_name=danmu['data']['uname']
         print('欢迎 '+user_name)
         print('================================\n\n')
-        return ''
+        return assembleJson(user_name, "", cmd)
     else:
+        print("UNKNOWN CMD: " + cmd)
+        print('================================\n\n')
         return ''
 
 
