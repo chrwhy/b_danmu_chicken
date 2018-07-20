@@ -104,7 +104,7 @@ def _tcp_start():
            print('Empty DANMAKUs\n') 
         if held_lock:
             mutex.release()
-        time.sleep(0.04)
+        time.sleep(0.3)
     clientSocket.close()
 
 def _heartbeat(self):
@@ -249,7 +249,7 @@ class DMJBot(object):
 if __name__ == '__main__':
     print(sys.argv)
     #Diffir Live 
-    #room_id=5565763
-    room_id=5086
+    room_id=5565763
+    #room_id=5086
     dmj = DMJBot(room_id)    
     dmj._start()
