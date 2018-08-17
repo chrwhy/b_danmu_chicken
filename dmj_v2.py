@@ -6,6 +6,7 @@ import sys
 import _thread
 import threading
 import time
+from left_pad import left_pad
 import requests
 import xml.dom.minidom
 import struct
@@ -23,8 +24,8 @@ DEBUG=False
 TO_ENGINE=True
 #ENGINE_IP='192.168.31.238'
 #ENGINE_IP='172.18.94.22'
-#ENGINE_IP='172.18.95.25'
-ENGINE_IP='192.168.1.4'
+ENGINE_IP='172.18.95.25'
+#ENGINE_IP='192.168.1.4'
 ENGINE_PORT=18090
 
 def debug(msg):
@@ -88,7 +89,11 @@ def _tcp_start():
         held_lock=True
         if len(DANMAKUs)>0:
             try:
-                clientSocket.send(DANMAKUs[0].encode())
+                line = DANMAKUs[0]
+                from_code='02'
+                meta=from_code+str(left_pad(str(len(line.encode('utf-8'))), 14-len(str(len(line.encode('utf-8')))), '0'))
+                pack = meta+line 
+                clientSocket.send(pack.encode())
                 del DANMAKUs[0]
                 ack = clientSocket.recv(256)
                 print('From Server:' + ack.decode())
